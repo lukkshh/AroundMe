@@ -1,13 +1,13 @@
 import express from "express";
 import { sequelize } from "./config/database";
 
+import locationRoutes from "./routes/location.routes";
+
 const app = express();
 
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.send("Hello World!");
-});
+app.use("/api", locationRoutes);
 
 sequelize
   .sync({ alter: false })

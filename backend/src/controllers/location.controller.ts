@@ -17,7 +17,7 @@ export const getNearbyLocations = async (
   req: Request,
   res: Response
 ): Promise<any> => {
-  const { lat, lon, distance = 500 } = req.query;
+  const { lat, lon, distance = 500, type } = req.query;
 
   if (!lat || !lon) {
     return res
@@ -25,7 +25,7 @@ export const getNearbyLocations = async (
       .json({ error: "Missing lat or lon query parameters" });
   }
 
-  const query = `
+  let query = `
     SELECT
       *,
       ST_Distance(location, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography) AS distance
@@ -35,12 +35,26 @@ export const getNearbyLocations = async (
       ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography,
       :distance
     )
-    ORDER BY distance ASC
   `;
+
+  if (type) {
+    query += ` AND category IN (:type)`;
+  }
+
+  query += ` ORDER BY distance ASC `;
 
   try {
     const [results] = await sequelize.query(query, {
-      replacements: { lat, lon, distance },
+      replacements: {
+        lat,
+        lon,
+        distance,
+        type: Array.isArray(type)
+          ? type
+          : typeof type === "string"
+          ? type.split(",")
+          : [],
+      },
     });
     return res.json(results);
   } catch (error) {
